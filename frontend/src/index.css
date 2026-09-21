@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+  }
+}
+
+/* =========================================================
+   PERMANENT HIGH-CONTRAST LIGHT MODE
+   ========================================================= */
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Panels & Cards */
+.glass-panel,
+.glass-card {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* =========================================================
+   AUTH QUOTE CARD (LOGIN & REGISTER)
+   ========================================================= */
+
+.auth-quote-card {
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 50%, #E2E8F0 100%) !important;
+  border-left: 1px solid #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+.auth-quote-card blockquote {
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+.auth-quote-card .quote-author {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+.auth-quote-card .quote-header,
+.auth-quote-card .quote-footer {
+  color: #475569 !important;
+  border-top-color: #CBD5E1 !important;
+}
+
+.auth-quote-card span {
+  color: #475569 !important;
+}
+
+/* =========================================================
+   UNIVERSAL UTILITY OVERRIDES (ENSURES FULL CONTRAST)
+   ========================================================= */
+
+/* Dark Background Utilities -> Light Equivalents */
+.bg-\[\#0B0F19\],
+.bg-\[\#070a13\],
+.bg-\[\#070A13\],
+.bg-\[\#060911\] {
+  background-color: #F8FAFC !important;
+}
+
+.bg-\[\#0D1117\],
+.bg-\[\#0F172A\],
+.bg-\[\#0F172A\]\/90,
+.bg-\[\#0F172A\]\/80,
+.bg-\[\#0F172A\]\/70 {
+  background-color: #FFFFFF !important;
+}
+
+.bg-gray-950,
+.bg-gray-950\/40,
+.bg-gray-900,
+.bg-gray-900\/90,
+.bg-gray-900\/80,
+.bg-gray-900\/70,
+.bg-gray-900\/60,
+.bg-gray-900\/40 {
+  background-color: #F1F5F9 !important;
+}
+
+.bg-gray-800,
+.bg-gray-800\/80,
+.bg-gray-800\/60,
+.bg-gray-800\/40,
+.bg-\[\#1E293B\] {
+  background-color: #E2E8F0 !important;
+}
+
+/* Borders */
+.border-gray-900,
+.border-gray-800,
+.border-gray-800\/90,
+.border-gray-800\/80,
+.border-gray-800\/60,
+.border-gray-700,
+.border-gray-700\/80,
+.border-gray-700\/60,
+.border-gray-700\/50 {
+  border-color: #E2E8F0 !important;
+}
+
+/* Text Colors */
+.text-white:not(.bg-blue-600):not(.bg-blue-500):not(.bg-emerald-600):not(.bg-rose-600):not(.bg-amber-600):not(.bg-purple-600):not(.bg-gray-900) {
+  color: #0F172A !important;
+}
+
+/* Ensure colored primary buttons always retain crisp white text */
+.bg-blue-600,
+.bg-blue-500,
+.bg-emerald-600,
+.bg-rose-600,
+.bg-amber-600,
+.bg-purple-600 {
+  color: #FFFFFF !important;
+}
+
+.bg-blue-600 *,
+.bg-blue-500 *,
+.bg-emerald-600 *,
+.bg-rose-600 *,
+.bg-amber-600 *,
+.bg-purple-600 * {
+  color: #FFFFFF !important;
+}
+
+.text-gray-100,
+.text-gray-200,
+.text-gray-300 {
+  color: #1E293B !important;
+}
+
+.text-gray-400 {
+  color: #475569 !important;
+}
+
+.text-gray-500 {
+  color: #64748B !important;
+}
+
+/* Navbar */
+nav {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+nav a:not(.bg-blue-600):not(.bg-blue-500) {
+  color: #334155 !important;
+}
+
+nav a:hover:not(.bg-blue-600):not(.bg-blue-500) {
+  color: #0F172A !important;
+}
+
+/* Form inputs & controls */
+input:not([type="checkbox"]),
+textarea,
+select {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+  border-color: #CBD5E1 !important;
+}
+
+input:not([type="checkbox"]):focus,
+textarea:focus,
+select:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Tables */
+thead {
+  background-color: #F8FAFC !important;
+  color: #475569 !important;
+  border-color: #E2E8F0 !important;
+}
+
+tbody tr:hover {
+  background-color: #F8FAFC !important;
+}
+
+/* Code blocks / pre */
+pre {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+  border-color: #E2E8F0 !important;
+}

@@ -1,0 +1,18 @@
+# =====================================================================
+# CodeForge: Java Execution Sandbox Container
+# Purpose: Isolated, unprivileged, and secure execution environment for Java code.
+# =====================================================================
+
+FROM openjdk:17-slim
+
+# Create unprivileged runner user
+RUN useradd -m -u 1001 -s /bin/bash runner
+
+# Set working directory
+WORKDIR /workspace
+
+# Switch to unprivileged runner user
+USER runner
+
+# Default command
+CMD ["bash"]
