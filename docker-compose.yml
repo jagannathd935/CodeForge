@@ -13,6 +13,8 @@ services:
       - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/seed_data.sql:/docker-entrypoint-initdb.d/02_seed_data.sql:ro
     networks:
       - codeforge-net
 
@@ -26,10 +28,16 @@ services:
       - mysql
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/codeforge_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ""
+      MYSQL_HOST: mysql
       MYSQL_PORT: 3306
-      CODEFORGE_EXECUTION_DOCKER_ENABLED: "false"
+      MYSQL_DATABASE: codeforge_db
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: ""
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      JWT_EXPIRATION: 86400000
+      DOCKER_ENABLED: "false"
+      EXECUTION_TIMEOUT: 5000
+      MEMORY_LIMIT: 256
     ports:
       - "8080:8080"
     networks:

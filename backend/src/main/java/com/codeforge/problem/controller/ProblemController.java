@@ -29,15 +29,38 @@ public class ProblemController {
     private final TopicRepository topicRepository;
     private final ProblemRepository problemRepository;
     private final TestCaseRepository testCaseRepository;
+    private final com.codeforge.submission.service.SubmissionService submissionService;
 
     public ProblemController(ProblemService problemService,
                              TopicRepository topicRepository,
                              ProblemRepository problemRepository,
-                             TestCaseRepository testCaseRepository) {
+                             TestCaseRepository testCaseRepository,
+                             com.codeforge.submission.service.SubmissionService submissionService) {
         this.problemService = problemService;
         this.topicRepository = topicRepository;
         this.problemRepository = problemRepository;
         this.testCaseRepository = testCaseRepository;
+        this.submissionService = submissionService;
+    }
+
+    @GetMapping("/problems/search")
+    public ResponseEntity<ApiResponse<List<ProblemListDto>>> searchProblems(
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String topic,
+            @RequestParam(required = false) String search,
+            Authentication authentication) {
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        List<ProblemListDto> problems = problemService.getAllProblems(difficulty, topic, search, currentUsername);
+        return ResponseEntity.ok(ApiResponse.success(problems));
+    }
+
+    @GetMapping("/problems/{id}/submissions")
+    public ResponseEntity<ApiResponse<List<com.codeforge.submission.dto.SubmissionResponse>>> getProblemSubmissions(
+            @PathVariable Long id,
+            Authentication authentication) {
+        String currentUsername = authentication != null ? authentication.getName() : null;
+        List<com.codeforge.submission.dto.SubmissionResponse> submissions = submissionService.getProblemSubmissions(id, currentUsername);
+        return ResponseEntity.ok(ApiResponse.success(submissions));
     }
 
     @GetMapping("/problems")

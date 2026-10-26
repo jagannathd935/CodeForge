@@ -47,8 +47,8 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <div className="flex items-center space-x-8">
-            <Link to={isAuthenticated ? dashboardTarget : "/login"} className="flex items-center space-x-3 group">
-              <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors shadow-xs">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors shadow-2xs">
                 <Code2 className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
@@ -56,74 +56,78 @@ export const Navbar = () => {
                   CodeForge
                 </span>
                 <span className="text-[10px] text-slate-500 font-mono tracking-wider -mt-1 font-semibold">
-                  CAMPUS ARENA
+                  ONLINE JUDGE
                 </span>
               </div>
             </Link>
 
-            {/* Clean Navigation Links */}
-            {isAuthenticated && (
-              <div className="hidden md:flex items-center space-x-1">
+            {/* Navigation Links */}
+            <div className="hidden md:flex items-center space-x-1">
+              {isAuthenticated && (
                 <Link
                   to={dashboardTarget}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors ${
                     isActive(dashboardTarget)
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-xs'
+                      ? 'bg-blue-50 text-blue-600 border border-blue-200 font-semibold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   <span>Dashboard</span>
                 </Link>
-                <Link
-                  to="/problems"
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                    isActive('/problems')
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  Problems
-                </Link>
-                <Link
-                  to="/contests"
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                    isActive('/contests')
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  Contests
-                </Link>
-                <Link
-                  to="/submissions"
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                    isActive('/submissions')
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  Submissions
-                </Link>
-                <Link
-                  to="/leaderboard"
-                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                    isActive('/leaderboard')
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  Leaderboard
-                </Link>
-              </div>
-            )}
+              )}
+              <Link
+                to="/problems"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/problems')
+                    ? 'bg-blue-50 text-blue-600 border border-blue-200 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                Problems
+              </Link>
+              <Link
+                to="/contests"
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive('/contests')
+                    ? 'bg-blue-50 text-blue-600 border border-blue-200 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                Contests
+              </Link>
+              {isAuthenticated && (
+                <>
+                  <Link
+                    to="/submissions"
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/submissions')
+                        ? 'bg-blue-50 text-blue-600 border border-blue-200 font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    Submissions
+                  </Link>
+                  <Link
+                    to="/leaderboard"
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/leaderboard')
+                        ? 'bg-blue-50 text-blue-600 border border-blue-200 font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    Leaderboard
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Right Action Menu */}
           <div className="flex items-center space-x-3">
-            {isAuthenticated && (
+            {isAuthenticated ? (
               <>
-                {/* Role Identifier (Left side of avatar circle & name) */}
+                {/* Role Identifier */}
                 <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${getRoleBadgeStyle()}`}>
                   {getRoleLabel()}
                 </span>
@@ -134,10 +138,10 @@ export const Navbar = () => {
                     <img
                       src={user.avatarUrl}
                       alt={user.username}
-                      className="w-8 h-8 rounded-full object-cover shadow-xs group-hover:ring-2 ring-blue-500 transition-all border border-slate-300"
+                      className="w-8 h-8 rounded-full object-cover shadow-2xs group-hover:ring-2 ring-blue-500 transition-all border border-slate-200"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 text-slate-800 flex items-center justify-center text-xs font-bold shadow-xs group-hover:ring-2 ring-blue-500 transition-all font-mono">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-300 text-slate-800 flex items-center justify-center text-xs font-bold shadow-2xs group-hover:ring-2 ring-blue-500 transition-all font-mono">
                       {initials}
                     </div>
                   )}
@@ -155,6 +159,21 @@ export const Navbar = () => {
                   <LogOut className="w-4 h-4" />
                 </button>
               </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-3.5 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-xs transition-colors"
+                >
+                  Register
+                </Link>
+              </div>
             )}
           </div>
         </div>
@@ -162,3 +181,5 @@ export const Navbar = () => {
     </nav>
   );
 };
+
+export default Navbar;

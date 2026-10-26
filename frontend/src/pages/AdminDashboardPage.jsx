@@ -25,9 +25,18 @@ import {
   Cpu
 } from 'lucide-react';
 
-export const AdminDashboardPage = () => {
+export const AdminDashboardPage = ({ initialTab }) => {
   // Navigation tabs: 'dashboard' | 'manage' | 'add' | 'users' | 'logs'
-  const [activeTab, setActiveTab] = useState('add');
+  const getInitialTab = () => {
+    if (initialTab) return initialTab;
+    const path = window.location.pathname;
+    if (path.includes('/admin/problems/create')) return 'add';
+    if (path.includes('/admin/problems')) return 'manage';
+    if (path.includes('/admin/users')) return 'users';
+    if (path.includes('/admin/submissions')) return 'logs';
+    return 'dashboard';
+  };
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   
   // Problem Form Sub-tabs: 'details' | 'testcases'
   const [problemTab, setProblemTab] = useState('details');

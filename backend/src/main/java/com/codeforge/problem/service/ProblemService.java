@@ -88,12 +88,7 @@ public class ProblemService {
 
             List<Submission> submissions = submissionRepository.findByProblemIdOrderByCreatedAtDesc(problem.getId());
             if (submissions.isEmpty()) {
-                double defaultRate = switch (problem.getDifficulty()) {
-                    case EASY -> 62.3;
-                    case MEDIUM -> 52.8;
-                    case HARD -> 41.5;
-                };
-                dto.setAcceptanceRate(defaultRate);
+                dto.setAcceptanceRate(0.0);
             } else {
                 long accepted = submissions.stream().filter(s -> s.getStatus() == SubmissionStatus.ACCEPTED).count();
                 double rate = Math.round(((double) accepted / submissions.size() * 100.0) * 10.0) / 10.0;

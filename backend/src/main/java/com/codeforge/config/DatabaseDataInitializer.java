@@ -76,39 +76,57 @@ public class DatabaseDataInitializer implements CommandLineRunner {
 
     private void seedUsers() {
         // Admin
-        if (!userRepository.existsByUsername("admin")) {
-            User admin = new User("admin", "admin@codeforge.com", passwordEncoder.encode("admin123"), Role.ROLE_ADMIN, "CodeForge Tech");
-            userRepository.save(admin);
-            System.out.println(">> Initialized default admin account: admin / admin123");
+        User admin = userRepository.findByUsername("admin").orElse(null);
+        if (admin == null) {
+            admin = new User("admin", "admin@codeforge.com", passwordEncoder.encode("admin123"), Role.ROLE_ADMIN, "CodeForge Tech");
+        } else {
+            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setRole(Role.ROLE_ADMIN);
+            admin.setActive(true);
         }
+        userRepository.save(admin);
 
         // Contest Organizer
-        if (!userRepository.existsByUsername("organizer")) {
-            User organizer = new User("organizer", "organizer@codeforge.com", passwordEncoder.encode("organizer123"), Role.ROLE_ORGANIZER, "MIT ACM Chapter");
-            userRepository.save(organizer);
-            System.out.println(">> Initialized contest organizer account: organizer / organizer123");
+        User organizer = userRepository.findByUsername("organizer").orElse(null);
+        if (organizer == null) {
+            organizer = new User("organizer", "organizer@codeforge.com", passwordEncoder.encode("organizer123"), Role.ROLE_ORGANIZER, "MIT ACM Chapter");
+        } else {
+            organizer.setPassword(passwordEncoder.encode("organizer123"));
+            organizer.setRole(Role.ROLE_ORGANIZER);
+            organizer.setActive(true);
         }
+        userRepository.save(organizer);
 
         // Participant 1
-        if (!userRepository.existsByUsername("john_doe")) {
-            User user1 = new User("john_doe", "john@codeforge.com", passwordEncoder.encode("user123"), Role.ROLE_PARTICIPANT, "Stanford CS");
-            userRepository.save(user1);
-            System.out.println(">> Initialized participant account: john_doe / user123");
+        User user1 = userRepository.findByUsername("john_doe").orElse(null);
+        if (user1 == null) {
+            user1 = new User("john_doe", "john@codeforge.com", passwordEncoder.encode("user123"), Role.ROLE_PARTICIPANT, "Stanford CS");
+        } else {
+            user1.setPassword(passwordEncoder.encode("user123"));
+            user1.setRole(Role.ROLE_PARTICIPANT);
+            user1.setActive(true);
         }
+        userRepository.save(user1);
 
         // Participant 2
-        if (!userRepository.existsByUsername("sarah_coder")) {
-            User user2 = new User("sarah_coder", "sarah@codeforge.com", passwordEncoder.encode("user123"), Role.ROLE_PARTICIPANT, "Carnegie Mellon Univ");
-            userRepository.save(user2);
-            System.out.println(">> Initialized participant account: sarah_coder / user123");
+        User user2 = userRepository.findByUsername("sarah_coder").orElse(null);
+        if (user2 == null) {
+            user2 = new User("sarah_coder", "sarah@codeforge.com", passwordEncoder.encode("user123"), Role.ROLE_PARTICIPANT, "Carnegie Mellon Univ");
+        } else {
+            user2.setPassword(passwordEncoder.encode("user123"));
+            user2.setActive(true);
         }
+        userRepository.save(user2);
 
         // Participant 3
-        if (!userRepository.existsByUsername("alex_dev")) {
-            User user3 = new User("alex_dev", "alex@codeforge.com", passwordEncoder.encode("user123"), Role.ROLE_PARTICIPANT, "Berkeley EECS");
-            userRepository.save(user3);
-            System.out.println(">> Initialized participant account: alex_dev / user123");
+        User user3 = userRepository.findByUsername("alex_dev").orElse(null);
+        if (user3 == null) {
+            user3 = new User("alex_dev", "alex@codeforge.com", passwordEncoder.encode("user123"), Role.ROLE_PARTICIPANT, "Berkeley EECS");
+        } else {
+            user3.setPassword(passwordEncoder.encode("user123"));
+            user3.setActive(true);
         }
+        userRepository.save(user3);
     }
 
     private void seedTopics() {

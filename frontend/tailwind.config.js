@@ -4,16 +4,15 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         forge: {
-          bg: '#0B0F19',
-          card: '#111827',
-          surface: '#1E293B',
-          border: '#1F2937',
-          borderHover: '#374151',
+          bg: '#f8fafc',
+          card: '#ffffff',
+          surface: '#f1f5f9',
+          border: '#e2e8f0',
+          borderHover: '#cbd5e1',
           accent: '#3B82F6',
           accentHover: '#2563EB',
           success: '#10B981',

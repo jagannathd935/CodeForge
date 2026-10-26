@@ -21,6 +21,8 @@ public class RegisterRequest {
     @NotBlank(message = "Organization name is required")
     private String organization;
 
+    private String confirmPassword;
+
     private String role; // "ROLE_USER" or "ROLE_ADMIN"
 
     public RegisterRequest() {
@@ -56,6 +58,14 @@ public class RegisterRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
     }
 
     public String getOrganization() {

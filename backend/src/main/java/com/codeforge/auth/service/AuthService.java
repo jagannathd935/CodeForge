@@ -44,11 +44,15 @@ public class AuthService {
             throw new BadRequestException("Email is already in use!");
         }
 
+        if (request.getConfirmPassword() != null && !request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Password confirmation does not match!");
+        }
+
         Role role = Role.ROLE_PARTICIPANT;
-        if ("ROLE_ORGANIZER".equalsIgnoreCase(request.getRole())) {
+        if ("ROLE_ADMIN".equalsIgnoreCase(request.getRole())) {
+            throw new BadRequestException("Administrative role cannot be self-assigned during registration. Admin privileges must be granted by an authorized administrator.");
+        } else if ("ROLE_ORGANIZER".equalsIgnoreCase(request.getRole())) {
             role = Role.ROLE_ORGANIZER;
-        } else if ("ROLE_ADMIN".equalsIgnoreCase(request.getRole())) {
-            role = Role.ROLE_ADMIN;
         }
 
         String organization = request.getOrganization() != null && !request.getOrganization().isBlank()
@@ -70,7 +74,7 @@ public class AuthService {
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String jwt = tokenProvider.generateToken(authentication);
+        String jwt = tokenProvider.generateToken(savedUser.getId(), savedUser.getUsername(), savedUser.getRole().name());
 
         return new AuthResponse(jwt, savedUser.getId(), savedUser.getUsername(), savedUser.getEmail(), savedUser.getRole().name(), savedUser.getAvatarUrl(), savedUser.getAuthProvider(), savedUser.getOrganization());
     }
@@ -89,7 +93,7 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
+        String jwt = tokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole().name());
 
         return new AuthResponse(jwt, user.getId(), user.getUsername(), user.getEmail(), user.getRole().name(), user.getAvatarUrl(), user.getAuthProvider(), user.getOrganization());
     }

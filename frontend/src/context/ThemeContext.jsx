@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext({ theme: 'light' });
 
 export const ThemeProvider = ({ children }) => {
   useEffect(() => {
@@ -9,22 +9,16 @@ export const ThemeProvider = ({ children }) => {
     root.classList.add('light');
     try {
       localStorage.removeItem('codeforge_theme');
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme: 'light', toggleTheme: () => {} }}>
+    <ThemeContext.Provider value={{ theme: 'light' }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-};
+export const useTheme = () => useContext(ThemeContext);
+
+export default ThemeProvider;

@@ -228,9 +228,7 @@ public class SubmissionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Problem", "id", request.getProblemId()));
 
         List<TestCase> sampleCases = testCaseRepository.findByProblemIdAndIsHiddenFalse(problem.getId());
-        TestCase sampleCase = sampleCases.isEmpty() ? null : sampleCases.get(0);
-
-        return judgeService.runSampleCode(request, problem, sampleCase);
+        return judgeService.runSampleCode(request, problem, sampleCases);
     }
 
     @Transactional(readOnly = true)

@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.codeforge.user.service.UserService userService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, com.codeforge.user.service.UserService userService) {
         this.authService = authService;
+        this.userService = userService;
     }
 
     @PostMapping("/register")
@@ -32,6 +34,21 @@ public class AuthController {
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("User logged in successfully", response));
+    }
+
+    @org.springframework.web.bind.annotation.GetMapping("/me")
+    public ResponseEntity<ApiResponse<com.codeforge.auth.dto.UserProfileDto>> getMe(org.springframework.security.core.Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Unauthorized"));
+        }
+        com.codeforge.auth.dto.UserProfileDto profile = userService.getCurrentUserProfile(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(profile));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<String>> logout() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        return ResponseEntity.ok(ApiResponse.success("User logged out successfully", null));
     }
 }
 

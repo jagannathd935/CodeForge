@@ -12,7 +12,7 @@ echo.
 echo [+] Configuration:
 echo     Backend API:  http://localhost:8080
 echo     Frontend UI:  http://localhost:5173
-echo     H2 Console:   http://localhost:8080/h2-console
+echo     Database:     MySQL 8.0 (codeforge_db)
 echo     Default Accounts:
 echo       Admin:      admin     / admin123
 echo       Organizer:  organizer / organizer123

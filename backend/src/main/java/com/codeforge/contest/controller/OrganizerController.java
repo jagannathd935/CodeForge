@@ -71,8 +71,8 @@ public class OrganizerController {
     }
 
     @GetMapping("/contests/{id}/analytics")
-    public ResponseEntity<ApiResponse<ContestAnalyticsDto>> getContestAnalytics(@PathVariable Long id) {
-        ContestAnalyticsDto analytics = contestService.getContestAnalytics(id);
+    public ResponseEntity<ApiResponse<ContestAnalyticsDto>> getContestAnalytics(@PathVariable Long id, Authentication authentication) {
+        ContestAnalyticsDto analytics = contestService.getContestAnalytics(id, authentication.getName());
         return ResponseEntity.ok(ApiResponse.success(analytics));
     }
 }

@@ -1,12 +1,15 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './components/Toast';
 import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminRoute } from './components/AdminRoute';
 import { OrganizerRoute } from './components/OrganizerRoute';
+import { PublicRoute } from './components/PublicRoute';
 
+import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ProblemListPage } from './pages/ProblemListPage';
@@ -22,8 +25,6 @@ import { ParticipantDashboardPage } from './pages/ParticipantDashboardPage';
 import { OrganizerDashboardPage } from './pages/OrganizerDashboardPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 
-import { useAuth } from './context/AuthContext';
-
 // Dynamic Router ensuring Admin, Organizer, and Participant each access their correct dashboard
 const DashboardRouter = () => {
   const { user } = useAuth();
@@ -37,39 +38,50 @@ const DashboardRouter = () => {
 };
 
 function AppRoutes() {
-  const { isAuthenticated, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-slate-50">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
     <Routes>
-      {/* First Page Gateway: When not logged in, only Login/Register is accessible */}
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? <DashboardRouter /> : <LoginPage />
-        }
-      />
+      {/* Public Pages */}
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/login"
         element={
-          isAuthenticated ? <DashboardRouter /> : <LoginPage />
+          <PublicRoute restricted={true}>
+            <LoginPage />
+          </PublicRoute>
         }
       />
       <Route
         path="/register"
         element={
-          isAuthenticated ? <DashboardRouter /> : <RegisterPage />
+          <PublicRoute restricted={true}>
+            <RegisterPage />
+          </PublicRoute>
         }
       />
 
-      {/* Role-Aware Dashboard Router */}
+      {/* Problems Catalogue & IDE (Browsing is public, submission requires login) */}
+      <Route path="/problems" element={<ProblemListPage />} />
+      <Route path="/problems/:id" element={<ProblemDetailPage />} />
+
+      {/* Contests Hub, Live Arena, Results & Analytics */}
+      <Route path="/contests" element={<ContestListPage />} />
+      <Route path="/contests/:id" element={<ContestDetailPage />} />
+      <Route path="/contests/:contestId/problems/:id" element={<ProblemDetailPage />} />
+      <Route path="/contests/:id/results" element={<ContestResultsPage />} />
+      <Route path="/contests/:id/analytics" element={<ContestAnalyticsPage />} />
+      <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+      {/* Authenticated User Routes */}
       <Route
         path="/dashboard"
         element={
@@ -78,100 +90,6 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-
-      {/* Organizer Studio */}
-      <Route
-        path="/organizer"
-        element={
-          <OrganizerRoute>
-            <OrganizerDashboardPage />
-          </OrganizerRoute>
-        }
-      />
-
-      {/* Admin Portal */}
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <AdminDashboardPage />
-          </AdminRoute>
-        }
-      />
-
-      {/* Problem Bank & IDE */}
-      <Route
-        path="/problems"
-        element={
-          <ProtectedRoute>
-            <ProblemListPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/problems/:id"
-        element={
-          <ProtectedRoute>
-            <ProblemDetailPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Contest Solving Mode */}
-      <Route
-        path="/contests/:contestId/problems/:id"
-        element={
-          <ProtectedRoute>
-            <ProblemDetailPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Contests Hub, Live Arena, Results & Analytics */}
-      <Route
-        path="/contests"
-        element={
-          <ProtectedRoute>
-            <ContestListPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contests/:id"
-        element={
-          <ProtectedRoute>
-            <ContestDetailPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contests/:id/results"
-        element={
-          <ProtectedRoute>
-            <ContestResultsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contests/:id/analytics"
-        element={
-          <ProtectedRoute>
-            <ContestAnalyticsPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Leaderboard */}
-      <Route
-        path="/leaderboard"
-        element={
-          <ProtectedRoute>
-            <LeaderboardPage />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Submissions History & Profile */}
       <Route
         path="/submissions"
         element={
@@ -189,11 +107,76 @@ function AppRoutes() {
         }
       />
 
-      {/* Fallback */}
+      {/* Organizer Routes */}
       <Route
-        path="*"
-        element={isAuthenticated ? <DashboardRouter /> : <Navigate to="/login" replace />}
+        path="/organizer"
+        element={
+          <OrganizerRoute>
+            <OrganizerDashboardPage />
+          </OrganizerRoute>
+        }
       />
+      <Route
+        path="/organizer/contests"
+        element={
+          <OrganizerRoute>
+            <OrganizerDashboardPage />
+          </OrganizerRoute>
+        }
+      />
+
+      {/* Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage initialTab="dashboard" />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/problems"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage initialTab="manage" />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/problems/create"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage initialTab="add" />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/problems/:id/edit"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage initialTab="add" />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage initialTab="users" />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/submissions"
+        element={
+          <AdminRoute>
+            <AdminDashboardPage initialTab="logs" />
+          </AdminRoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
@@ -202,14 +185,16 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
-            <Navbar />
-            <main className="flex-1">
-              <AppRoutes />
-            </main>
-          </div>
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+              <Navbar />
+              <main className="flex-1">
+                <AppRoutes />
+              </main>
+            </div>
+          </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

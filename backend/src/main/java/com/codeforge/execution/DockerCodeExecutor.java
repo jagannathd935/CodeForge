@@ -159,21 +159,27 @@ public class DockerCodeExecutor implements CodeExecutor {
         }
     }
 
+    private static final int MAX_STREAM_BYTES = 65536;
+
     private ExecutionResult runProcessWithTimeout(ProcessBuilder pb, long timeoutMs) throws Exception {
         long start = System.currentTimeMillis();
         Process p = pb.start();
+
+        java.util.concurrent.CompletableFuture<String> stdoutFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> readStreamSafe(p.getInputStream()));
+        java.util.concurrent.CompletableFuture<String> stderrFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> readStreamSafe(p.getErrorStream()));
+
         boolean finished = p.waitFor(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS);
         ExecutionResult result = new ExecutionResult();
         if (!finished) {
             p.destroyForcibly();
             result.setTimedOut(true);
             result.setExitCode(1);
-            result.setStderr("Timeout");
+            result.setStderr("Compilation timed out after " + timeoutMs + " ms");
         } else {
             result.setExitCode(p.exitValue());
             result.setRuntimeMs(System.currentTimeMillis() - start);
-            result.setStdout(readStream(p.getInputStream()));
-            result.setStderr(readStream(p.getErrorStream()));
+            result.setStdout(stdoutFuture.get(2, java.util.concurrent.TimeUnit.SECONDS));
+            result.setStderr(stderrFuture.get(2, java.util.concurrent.TimeUnit.SECONDS));
         }
         return result;
     }
@@ -181,6 +187,9 @@ public class DockerCodeExecutor implements CodeExecutor {
     private ExecutionResult runProcessWithInput(ProcessBuilder pb, String input, long timeoutMs) throws Exception {
         long start = System.currentTimeMillis();
         Process p = pb.start();
+
+        java.util.concurrent.CompletableFuture<String> stdoutFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> readStreamSafe(p.getInputStream()));
+        java.util.concurrent.CompletableFuture<String> stderrFuture = java.util.concurrent.CompletableFuture.supplyAsync(() -> readStreamSafe(p.getErrorStream()));
 
         if (input != null && !input.isEmpty()) {
             try (OutputStream os = p.getOutputStream()) {
@@ -197,24 +206,38 @@ public class DockerCodeExecutor implements CodeExecutor {
             p.destroyForcibly();
             result.setTimedOut(true);
             result.setExitCode(124);
-            result.setStderr("Time Limit Exceeded");
+            result.setStderr("Time Limit Exceeded (" + timeoutMs + " ms)");
+            result.setRuntimeMs(timeoutMs);
         } else {
             result.setExitCode(p.exitValue());
             result.setRuntimeMs(System.currentTimeMillis() - start);
-            result.setStdout(readStream(p.getInputStream()));
-            result.setStderr(readStream(p.getErrorStream()));
+            result.setStdout(stdoutFuture.get(2, java.util.concurrent.TimeUnit.SECONDS));
+            result.setStderr(stderrFuture.get(2, java.util.concurrent.TimeUnit.SECONDS));
         }
         return result;
     }
 
-    private String readStream(InputStream is) throws Exception {
-        StringBuilder sb = new StringBuilder();
+    private String readStreamSafe(InputStream is) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line).append("\n");
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[4096];
+            int totalRead = 0;
+            int r;
+            while ((r = reader.read(buf)) != -1) {
+                if (totalRead + r > MAX_STREAM_BYTES) {
+                    int remaining = MAX_STREAM_BYTES - totalRead;
+                    if (remaining > 0) {
+                        sb.append(buf, 0, remaining);
+                    }
+                    sb.append("\n... [Output truncated after ").append(MAX_STREAM_BYTES / 1024).append(" KB]");
+                    break;
+                }
+                sb.append(buf, 0, r);
+                totalRead += r;
             }
+            return sb.toString().trim();
+        } catch (Exception e) {
+            return "";
         }
-        return sb.toString().trim();
     }
 }

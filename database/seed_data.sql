@@ -15,7 +15,8 @@ USE codeforge_db;
 -- ---------------------------------------------------------------------
 INSERT INTO users (id, username, email, password, role) VALUES
 (1, 'admin', 'admin@codeforge.com', '$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.AQubh4a', 'ROLE_ADMIN'),
-(2, 'john_doe', 'john@codeforge.com', '$2a$10$wT8K8U1yHn/vO0z8C31kpeKzZ1vLg61sQoD.pM.3jW0YtXyEwM8m2', 'ROLE_USER');
+(2, 'organizer', 'organizer@codeforge.com', '$2a$10$053KUYejGgBOMuFpz1RE3ug0Kl39M4DVDsXk80dJsndEX1nRqLOOe', 'ROLE_ORGANIZER'),
+(3, 'john_doe', 'john@codeforge.com', '$2a$10$wT8K8U1yHn/vO0z8C31kpeKzZ1vLg61sQoD.pM.3jW0YtXyEwM8m2', 'ROLE_PARTICIPANT');
 
 -- ---------------------------------------------------------------------
 -- 2. Seed Topics
@@ -518,5 +519,5 @@ INSERT INTO contest_problems (contest_id, problem_id, points, order_index) VALUE
 -- ---------------------------------------------------------------------
 INSERT INTO contest_participants (contest_id, user_id, score, penalty_minutes) VALUES
 (1, 1, 400, 45),
-(1, 2, 200, 18),
-(3, 2, 200, 30);
+(1, 3, 200, 18),
+(3, 3, 200, 30);

@@ -50,6 +50,7 @@ public class AdminController {
     private final ContestRepository contestRepository;
     private final com.codeforge.contest.repository.ContestParticipantRepository contestParticipantRepository;
     private final com.codeforge.contest.repository.ContestProblemResultRepository contestProblemResultRepository;
+    private final com.codeforge.execution.DockerCodeExecutor dockerCodeExecutor;
 
     public AdminController(ProblemService problemService,
                            ProblemRepository problemRepository,
@@ -60,7 +61,8 @@ public class AdminController {
                            ContestService contestService,
                            ContestRepository contestRepository,
                            com.codeforge.contest.repository.ContestParticipantRepository contestParticipantRepository,
-                           com.codeforge.contest.repository.ContestProblemResultRepository contestProblemResultRepository) {
+                           com.codeforge.contest.repository.ContestProblemResultRepository contestProblemResultRepository,
+                           com.codeforge.execution.DockerCodeExecutor dockerCodeExecutor) {
         this.problemService = problemService;
         this.problemRepository = problemRepository;
         this.testCaseRepository = testCaseRepository;
@@ -71,6 +73,7 @@ public class AdminController {
         this.contestRepository = contestRepository;
         this.contestParticipantRepository = contestParticipantRepository;
         this.contestProblemResultRepository = contestProblemResultRepository;
+        this.dockerCodeExecutor = dockerCodeExecutor;
     }
 
     @GetMapping("/stats")
@@ -128,7 +131,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Problem deleted successfully", null));
     }
 
-    @GetMapping("/problems/{problemId}/test-cases")
+    @GetMapping({"/problems/{problemId}/testcases", "/problems/{problemId}/test-cases"})
     public ResponseEntity<ApiResponse<List<TestCaseDto>>> getProblemTestCases(@PathVariable Long problemId) {
         List<TestCaseDto> cases = testCaseRepository.findByProblemId(problemId).stream()
                 .map(tc -> new TestCaseDto(tc.getId(), tc.getInput(), tc.getExpectedOutput(), tc.getIsHidden()))
@@ -136,7 +139,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success(cases));
     }
 
-    @PostMapping("/problems/{problemId}/test-cases")
+    @PostMapping({"/problems/{problemId}/testcases", "/problems/{problemId}/test-cases"})
     public ResponseEntity<ApiResponse<TestCaseDto>> addTestCase(@PathVariable Long problemId, @RequestBody TestCaseDto dto) {
         Problem problem = problemRepository.findById(problemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem", "id", problemId));
@@ -146,7 +149,20 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Test case added", new TestCaseDto(saved.getId(), saved.getInput(), saved.getExpectedOutput(), saved.getIsHidden())));
     }
 
-    @DeleteMapping("/test-cases/{id}")
+    @PutMapping({"/testcases/{id}", "/test-cases/{id}"})
+    public ResponseEntity<ApiResponse<TestCaseDto>> updateTestCase(@PathVariable Long id, @RequestBody TestCaseDto dto) {
+        TestCase tc = testCaseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("TestCase", "id", id));
+
+        if (dto.getInput() != null) tc.setInput(dto.getInput());
+        if (dto.getExpectedOutput() != null) tc.setExpectedOutput(dto.getExpectedOutput());
+        if (dto.getIsHidden() != null) tc.setIsHidden(dto.getIsHidden());
+
+        TestCase saved = testCaseRepository.save(tc);
+        return ResponseEntity.ok(ApiResponse.success("Test case updated successfully", new TestCaseDto(saved.getId(), saved.getInput(), saved.getExpectedOutput(), saved.getIsHidden())));
+    }
+
+    @DeleteMapping({"/testcases/{id}", "/test-cases/{id}"})
     public ResponseEntity<ApiResponse<Void>> deleteTestCase(@PathVariable Long id) {
         if (!testCaseRepository.existsById(id)) {
             throw new ResourceNotFoundException("TestCase", "id", id);
@@ -199,7 +215,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("User status changed to " + (newActive ? "Active" : "Deactivated"), dto));
     }
 
-    @PatchMapping("/users/{id}/role")
+    @RequestMapping(value = "/users/{id}/role", method = {RequestMethod.PUT, RequestMethod.PATCH})
     public ResponseEntity<ApiResponse<UserProfileDto>> updateUserRole(@PathVariable Long id, @RequestBody Map<String, String> body) {
         String roleStr = body.get("role");
         if (roleStr == null) {
@@ -273,7 +289,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Contest updated successfully", updated));
     }
 
-    @GetMapping("/logs")
+    @GetMapping({"/system-status", "/logs"})
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSystemLogs() {
         Runtime runtime = Runtime.getRuntime();
         long totalMem = runtime.totalMemory();
@@ -287,7 +303,9 @@ public class AdminController {
         telemetry.put("maxMemoryMb", Math.round(maxMem / (1024.0 * 1024.0) * 10.0) / 10.0);
         telemetry.put("availableProcessors", runtime.availableProcessors());
         telemetry.put("databaseStatus", "ONLINE (MySQL 8.0)");
-        telemetry.put("executionSandbox", "ACTIVE (Docker Sandbox)");
+        telemetry.put("executionSandbox", dockerCodeExecutor.isAvailable() ?
+                "ACTIVE (Docker Isolated Containers)" :
+                "STANDALONE (Local Process-Isolated Sandbox; Docker unavailable on host)");
         telemetry.put("activeThreads", Thread.activeCount());
 
         List<Submission> recentSubmissions = submissionRepository.findAll().stream()

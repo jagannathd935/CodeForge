@@ -252,6 +252,28 @@ public class Solution {
       return;
     }
 
+    if (!code || !code.trim()) {
+      setDrawerCollapsed(false);
+      setBottomTab('result');
+      setLastAction('run');
+      setRunResult({
+        status: 'VALIDATION_ERROR',
+        errorMessage: 'Source code cannot be empty. Please write your solution before running.',
+      });
+      return;
+    }
+
+    if (code.length > 65536) {
+      setDrawerCollapsed(false);
+      setBottomTab('result');
+      setLastAction('run');
+      setRunResult({
+        status: 'VALIDATION_ERROR',
+        errorMessage: 'Source code exceeds maximum allowed size of 64 KB.',
+      });
+      return;
+    }
+
     setRunning(true);
     setDrawerCollapsed(false);
     setBottomTab('result');
@@ -291,6 +313,28 @@ public class Solution {
       setSubmitResult({
         status: 'AUTH_REQUIRED',
         errorMessage: 'Authentication required. Please log in to submit your solution.',
+      });
+      return;
+    }
+
+    if (!code || !code.trim()) {
+      setDrawerCollapsed(false);
+      setBottomTab('result');
+      setLastAction('submit');
+      setSubmitResult({
+        status: 'VALIDATION_ERROR',
+        errorMessage: 'Source code cannot be empty. Please write your solution before submitting.',
+      });
+      return;
+    }
+
+    if (code.length > 65536) {
+      setDrawerCollapsed(false);
+      setBottomTab('result');
+      setLastAction('submit');
+      setSubmitResult({
+        status: 'VALIDATION_ERROR',
+        errorMessage: 'Source code exceeds maximum allowed size of 64 KB.',
       });
       return;
     }
@@ -626,17 +670,27 @@ public class Solution {
               value={code}
               onChange={handleCodeChange}
               options={{
-                fontSize: 13,
-                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: 14,
+                fontFamily: "'Fira Code', 'Cascadia Code', Consolas, Monaco, monospace",
+                fontLigatures: true,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
                 smoothScrolling: true,
-                padding: { top: 12, bottom: 12 },
+                padding: { top: 14, bottom: 14 },
                 lineNumbers: 'on',
-                renderLineHighlight: 'all',
+                renderLineHighlight: 'line',
+                lineNumbersMinChars: 3,
                 automaticLayout: true,
                 tabSize: 4,
+                insertSpaces: true,
                 wordWrap: 'on',
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                bracketPairColorization: { enabled: true },
+                autoClosingBrackets: 'always',
+                autoClosingQuotes: 'always',
+                suggestOnTriggerCharacters: true,
+                quickSuggestions: true,
               }}
             />
           </div>
@@ -802,17 +856,21 @@ public class Solution {
                               </div>
                               <div>
                                 <div className="text-base font-bold text-emerald-800 font-sans">
-                                  {lastAction === 'submit' ? 'Accepted — Full Test Suite Passed' : 'Accepted — Sample Passed'}
+                                  {lastAction === 'submit'
+                                    ? 'Accepted — Full Test Suite Passed'
+                                    : (activeResult.expectedOutput ? 'Accepted — Sample Passed' : 'Executed Successfully')}
                                 </div>
                                 <div className="text-xs text-slate-700 font-sans">
-                                  {lastAction === 'submit' ? 'Congratulations! All test cases passed successfully.' : 'Output matched expected output.'}
+                                  {lastAction === 'submit'
+                                    ? 'Congratulations! All test cases passed successfully.'
+                                    : (activeResult.expectedOutput ? 'Output matched expected output.' : 'Custom input executed with zero exit code.')}
                                 </div>
                               </div>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-700 pt-1 border-t border-emerald-200">
-                              <span>Runtime: <strong className="text-slate-900">{activeResult.runtime || 12} ms</strong></span>
-                              <span>Memory: <strong className="text-slate-900">{activeResult.memory ? `${Math.round(activeResult.memory / 1024 * 10) / 10} MB` : '38.6 MB'}</strong></span>
+                              <span>Runtime: <strong className="text-slate-900">{activeResult.runtime != null ? `${activeResult.runtime} ms` : '—'}</strong></span>
+                              <span>Memory: <strong className="text-slate-900">{activeResult.memory ? `${Math.round(activeResult.memory / 1024 * 10) / 10} MB` : '—'}</strong></span>
                               {lastAction === 'submit' && activeResult.totalTests && (
                                 <span>Passed: <strong className="text-emerald-700 font-bold">{activeResult.testsPassed} / {activeResult.totalTests}</strong></span>
                               )}
@@ -870,6 +928,18 @@ public class Solution {
                               </div>
                             )}
 
+                            {/* Detailed Diagnostics / Logs for both Run & Submit */}
+                            {activeResult.errorMessage && activeResult.status !== 'ACCEPTED' && (
+                              <div className="pt-2 text-xs">
+                                <span className="text-rose-700 block mb-0.5 font-sans font-bold">
+                                  {activeResult.status === 'COMPILATION_ERROR' ? 'Compiler Diagnostics:' : 'Diagnostics / Details:'}
+                                </span>
+                                <pre className="bg-rose-100/70 p-2.5 rounded text-rose-900 border border-rose-300 whitespace-pre-wrap font-mono text-xs">
+                                  {activeResult.errorMessage}
+                                </pre>
+                              </div>
+                            )}
+
                             {/* Run Error / Output Comparison */}
                             {lastAction === 'run' && (
                               <div className="space-y-2 pt-2 text-xs">
@@ -894,14 +964,6 @@ public class Solution {
                                     <span className="text-slate-600 block mb-0.5 font-sans font-semibold">Expected Output:</span>
                                     <pre className="bg-white p-2 rounded text-emerald-700 border border-emerald-300 whitespace-pre-wrap font-bold">
                                       {activeResult.expectedOutput}
-                                    </pre>
-                                  </div>
-                                )}
-                                {activeResult.errorMessage && activeResult.status !== 'WRONG_ANSWER' && (
-                                  <div>
-                                    <span className="text-rose-700 block mb-0.5 font-sans font-bold">Compiler / Runtime Logs:</span>
-                                    <pre className="bg-rose-100 p-2.5 rounded text-rose-900 border border-rose-300 whitespace-pre-wrap font-medium">
-                                      {activeResult.errorMessage}
                                     </pre>
                                   </div>
                                 )}

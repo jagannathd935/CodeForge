@@ -27,19 +27,31 @@ public class JwtTokenProvider {
 
     public String generateToken(Authentication authentication) {
         UserDetails userPrincipal = (UserDetails) authentication.getPrincipal();
-        return generateTokenFromUsername(userPrincipal.getUsername());
+        String role = userPrincipal.getAuthorities().stream().findFirst().map(Object::toString).orElse("ROLE_PARTICIPANT");
+        return generateToken(null, userPrincipal.getUsername(), role);
     }
 
-    public String generateTokenFromUsername(String username) {
+    public String generateToken(Long userId, String username, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(username)
+                .claim("username", username)
+                .claim("role", role)
                 .issuedAt(now)
                 .expiration(expiryDate)
-                .signWith(getSigningKey())
-                .compact();
+                .signWith(getSigningKey());
+
+        if (userId != null) {
+            builder.claim("userId", userId);
+        }
+
+        return builder.compact();
+    }
+
+    public String generateTokenFromUsername(String username) {
+        return generateToken(null, username, "ROLE_PARTICIPANT");
     }
 
     public String getUsernameFromJwt(String token) {

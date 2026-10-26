@@ -41,8 +41,8 @@ export const AuthProvider = ({ children }) => {
     return userData;
   };
 
-  const register = async (username, email, password, organization, role = 'ROLE_USER') => {
-    const res = await api.post('/auth/register', { username, email, password, organization, role });
+  const register = async (username, email, password, confirmPassword, organization, role = 'ROLE_PARTICIPANT') => {
+    const res = await api.post('/auth/register', { username, email, password, confirmPassword, organization, role });
     const data = res.data.data;
     const userData = {
       id: data.id,

@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 public class LocalSandboxExecutor implements CodeExecutor {
 
     private final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+    private static final int MAX_OUTPUT_BYTES = 65536; // 64 KB stdout/stderr capture cap
 
     @Override
     public boolean isAvailable() {
@@ -23,6 +24,50 @@ public class LocalSandboxExecutor implements CodeExecutor {
             return customPath;
         }
         return isWindows ? "python" : "python3";
+    }
+
+    private void sanitizeEnvironment(ProcessBuilder pb) {
+        // Strip sensitive credentials, keys, and tokens from process environment
+        try {
+            pb.environment().keySet().removeIf(k -> {
+                String upper = k.toUpperCase();
+                return upper.contains("SECRET") ||
+                        upper.contains("PASSWORD") ||
+                        upper.contains("TOKEN") ||
+                        upper.contains("KEY") ||
+                        upper.contains("DATABASE") ||
+                        upper.contains("DATASOURCE") ||
+                        upper.startsWith("MYSQL_") ||
+                        upper.startsWith("SPRING_");
+            });
+        } catch (Exception ignored) {}
+    }
+
+    private void destroyProcessTree(Process process) {
+        try {
+            process.descendants().forEach(ProcessHandle::destroyForcibly);
+        } catch (Throwable ignored) {}
+        try {
+            process.destroyForcibly();
+        } catch (Throwable ignored) {}
+    }
+
+    private String readCappedFile(File file) {
+        if (!file.exists()) return "";
+        try {
+            long len = file.length();
+            if (len <= MAX_OUTPUT_BYTES) {
+                return Files.readString(file.toPath(), StandardCharsets.UTF_8).trim();
+            }
+            try (InputStream is = new FileInputStream(file)) {
+                byte[] buf = new byte[MAX_OUTPUT_BYTES];
+                int read = is.read(buf, 0, MAX_OUTPUT_BYTES);
+                String content = new String(buf, 0, read, StandardCharsets.UTF_8);
+                return content.trim() + "\n... [Output truncated after " + (MAX_OUTPUT_BYTES / 1024) + " KB]";
+            }
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     @Override
@@ -48,10 +93,11 @@ public class LocalSandboxExecutor implements CodeExecutor {
             } else if ("CPP".equals(lang) || "C++".equals(lang)) {
                 pb = new ProcessBuilder("g++", "-O3", "-std=c++17", fileName, "-o", outName);
             } else {
-                // Default: Java
+                // Java
                 pb = new ProcessBuilder("javac", "-encoding", "UTF-8", fileName);
             }
             pb.directory(sourceDir);
+            sanitizeEnvironment(pb);
 
             File compOut = new File(sourceDir, "compile_stdout.txt");
             File compErr = new File(sourceDir, "compile_stderr.txt");
@@ -62,7 +108,7 @@ public class LocalSandboxExecutor implements CodeExecutor {
             boolean completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
 
             if (!completed) {
-                process.destroyForcibly();
+                destroyProcessTree(process);
                 result.setTimedOut(true);
                 result.setStderr("Compilation timed out after " + timeoutMs + " ms");
                 result.setExitCode(1);
@@ -70,8 +116,10 @@ public class LocalSandboxExecutor implements CodeExecutor {
             }
 
             result.setExitCode(process.exitValue());
-            result.setStdout(compOut.exists() ? Files.readString(compOut.toPath(), StandardCharsets.UTF_8).trim() : "");
-            result.setStderr(compErr.exists() ? Files.readString(compErr.toPath(), StandardCharsets.UTF_8).trim() : "");
+            String stdout = readCappedFile(compOut);
+            String stderr = readCappedFile(compErr);
+            result.setStdout(stdout);
+            result.setStderr(!stderr.isEmpty() ? stderr : stdout);
             result.setRuntimeMs(System.currentTimeMillis() - startTime);
 
         } catch (Exception e) {
@@ -92,7 +140,7 @@ public class LocalSandboxExecutor implements CodeExecutor {
             ProcessBuilder pb;
             if ("PYTHON".equals(lang) || "PYTHON3".equals(lang)) {
                 String pythonCmd = resolvePythonCommand();
-                pb = new ProcessBuilder(pythonCmd, targetName.endsWith(".py") ? targetName : targetName + ".py");
+                pb = new ProcessBuilder(pythonCmd, "-u", targetName.endsWith(".py") ? targetName : targetName + ".py");
             } else if ("JAVASCRIPT".equals(lang) || "JS".equals(lang) || "NODE".equals(lang) || "NODEJS".equals(lang)) {
                 pb = new ProcessBuilder("node", targetName.endsWith(".js") ? targetName : targetName + ".js");
             } else if ("CPP".equals(lang) || "C++".equals(lang) || "C".equals(lang)) {
@@ -104,13 +152,12 @@ public class LocalSandboxExecutor implements CodeExecutor {
                 pb = new ProcessBuilder("java", maxHeapArg, "-Dfile.encoding=UTF-8", "-cp", ".", targetName);
             }
             pb.directory(workDir);
+            sanitizeEnvironment(pb);
 
-            // Redirect stdin
+            // Redirect stdin (always supply file so child process immediately receives EOF on empty input)
             File inFile = new File(workDir, "stdin.txt");
-            if (input != null && !input.isEmpty()) {
-                Files.writeString(inFile.toPath(), input, StandardCharsets.UTF_8);
-                pb.redirectInput(inFile);
-            }
+            Files.writeString(inFile.toPath(), input != null ? input : "", StandardCharsets.UTF_8);
+            pb.redirectInput(inFile);
 
             // Redirect stdout and stderr to prevent OS pipe deadlocks
             File outFile = new File(workDir, "stdout.txt");
@@ -122,7 +169,7 @@ public class LocalSandboxExecutor implements CodeExecutor {
             boolean completed = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS);
 
             if (!completed) {
-                process.destroyForcibly();
+                destroyProcessTree(process);
                 result.setTimedOut(true);
                 result.setExitCode(124); // Standard timeout exit code
                 result.setStderr("Time Limit Exceeded (" + timeoutMs + " ms)");
@@ -131,16 +178,29 @@ public class LocalSandboxExecutor implements CodeExecutor {
             }
 
             result.setRuntimeMs(System.currentTimeMillis() - startTime);
-            result.setExitCode(process.exitValue());
+            int exitCode = process.exitValue();
+            result.setExitCode(exitCode);
 
-            String stdout = outFile.exists() ? Files.readString(outFile.toPath(), StandardCharsets.UTF_8).trim() : "";
-            String stderr = errFile.exists() ? Files.readString(errFile.toPath(), StandardCharsets.UTF_8).trim() : "";
+            String stdout = readCappedFile(outFile);
+            String stderr = readCappedFile(errFile);
 
             result.setStdout(stdout);
-            result.setStderr(stderr);
 
-            long approxMemory = Math.min((long) memoryLimitMb * 1024, 38400 + (result.getRuntimeMs() * 2));
-            result.setMemoryKb(approxMemory);
+            if (exitCode != 0 && stderr.isEmpty()) {
+                // Map common OS crash exit codes to human-readable competitive programming diagnostics
+                if (exitCode == -1073741819 || exitCode == 139) {
+                    stderr = "Segmentation Fault (Access Violation / Memory Out-of-Bounds)";
+                } else if (exitCode == -1073741510 || exitCode == 134) {
+                    stderr = "Stack Overflow (Recursion depth limit exceeded)";
+                } else if (exitCode == -1073741676 || exitCode == 136) {
+                    stderr = "Integer Division by Zero (Floating Point Exception)";
+                } else {
+                    stderr = "Process terminated with exit code " + exitCode;
+                }
+            }
+            result.setStderr(stderr);
+            // In standalone host process mode, memory usage is not fabricated; 0 indicates unmeasured host process.
+            result.setMemoryKb(0L);
 
         } catch (Exception e) {
             result.setExitCode(1);

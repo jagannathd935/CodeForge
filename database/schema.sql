@@ -1,9 +1,8 @@
 -- =====================================================================
--- CodeForge: Database Schema Definition
--- Version: 1.0 (MVP)
+-- CodeForge: Complete Database Schema Definition
 -- Target RDBMS: MySQL 8.0+
--- Description: Complete schema for Users, Problems, Topics, Test Cases,
---              and Submissions with strict relational constraints and indexing.
+-- Description: Schema for Users, Problems, Topics, Test Cases,
+--              Submissions, Contests, Contest Participants, and Results
 -- =====================================================================
 
 CREATE DATABASE IF NOT EXISTS codeforge_db
@@ -15,14 +14,16 @@ USE codeforge_db;
 -- Temporarily disable foreign key constraints for clean re-creation
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS contest_problem_results;
+DROP TABLE IF EXISTS contest_participants;
+DROP TABLE IF EXISTS contest_problems;
 DROP TABLE IF EXISTS submissions;
 DROP TABLE IF EXISTS test_cases;
 DROP TABLE IF EXISTS problem_topics;
 DROP TABLE IF EXISTS topics;
+DROP TABLE IF EXISTS contests;
 DROP TABLE IF EXISTS problems;
 DROP TABLE IF EXISTS users;
-
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- ---------------------------------------------------------------------
 -- Table: users
@@ -35,9 +36,14 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL COMMENT 'BCrypt hashed password',
     role VARCHAR(30) NOT NULL DEFAULT 'ROLE_PARTICIPANT' COMMENT 'ROLE_PARTICIPANT, ROLE_ORGANIZER, ROLE_ADMIN',
     active BOOLEAN NOT NULL DEFAULT TRUE,
+    auth_provider VARCHAR(20) DEFAULT 'LOCAL',
+    avatar_url VARCHAR(500) DEFAULT NULL,
+    organization VARCHAR(150) DEFAULT 'CodeForge Tech',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_users_username (username),
-    INDEX idx_users_email (email)
+    INDEX idx_users_email (email),
+    INDEX idx_users_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -53,12 +59,19 @@ CREATE TABLE problems (
     constraints TEXT,
     input_format TEXT,
     output_format TEXT,
+    explanation TEXT,
+    solution_template TEXT,
     starter_code TEXT COMMENT 'Initial Java boilerplate loaded into Monaco Editor',
     time_limit INT NOT NULL DEFAULT 1000 COMMENT 'Execution time limit in milliseconds',
     memory_limit INT NOT NULL DEFAULT 256 COMMENT 'Execution memory limit in megabytes',
+    created_by BIGINT DEFAULT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_problems_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_problems_difficulty (difficulty),
-    INDEX idx_problems_slug (slug)
+    INDEX idx_problems_slug (slug),
+    INDEX idx_problems_active (active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -95,38 +108,12 @@ CREATE TABLE test_cases (
     input TEXT NOT NULL,
     expected_output TEXT NOT NULL,
     is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    time_limit INT NOT NULL DEFAULT 1000,
+    memory_limit INT NOT NULL DEFAULT 256,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_tc_problem FOREIGN KEY (problem_id) REFERENCES problems(id) ON DELETE CASCADE,
     INDEX idx_tc_problem (problem_id),
     INDEX idx_tc_is_hidden (is_hidden)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ---------------------------------------------------------------------
--- Table: submissions
--- Purpose: Historical record of user submissions and automated judge verdicts
--- ---------------------------------------------------------------------
-CREATE TABLE submissions (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id BIGINT NOT NULL,
-    problem_id BIGINT NOT NULL,
-    contest_id BIGINT DEFAULT NULL,
-    language VARCHAR(30) NOT NULL DEFAULT 'JAVA',
-    code MEDIUMTEXT NOT NULL,
-    status VARCHAR(30) NOT NULL DEFAULT 'PENDING' COMMENT 'ACCEPTED, WRONG_ANSWER, COMPILATION_ERROR, TIME_LIMIT_EXCEEDED, RUNTIME_ERROR',
-    runtime INT DEFAULT NULL COMMENT 'Execution time in milliseconds',
-    memory INT DEFAULT NULL COMMENT 'Peak memory usage in kilobytes',
-    tests_passed INT NOT NULL DEFAULT 0,
-    total_tests INT NOT NULL DEFAULT 0,
-    error_message TEXT DEFAULT NULL COMMENT 'Compiler stderr or runtime exception stack trace',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_sub_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_sub_problem FOREIGN KEY (problem_id) REFERENCES problems(id) ON DELETE CASCADE,
-    CONSTRAINT fk_sub_contest FOREIGN KEY (contest_id) REFERENCES contests(id) ON DELETE SET NULL,
-    INDEX idx_sub_user (user_id),
-    INDEX idx_sub_problem (problem_id),
-    INDEX idx_sub_contest (contest_id),
-    INDEX idx_sub_status (status),
-    INDEX idx_sub_created_at (created_at DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -139,13 +126,16 @@ CREATE TABLE contests (
     slug VARCHAR(150) NOT NULL UNIQUE,
     description TEXT,
     rules TEXT,
-    status VARCHAR(30) DEFAULT NULL COMMENT 'DRAFT, UPCOMING, LIVE, COMPLETED, CANCELLED',
+    status VARCHAR(30) DEFAULT 'UPCOMING' COMMENT 'DRAFT, UPCOMING, LIVE, COMPLETED, CANCELLED',
+    created_by BIGINT DEFAULT NULL,
     created_by_user_id BIGINT DEFAULT NULL,
     penalty_per_wrong INT NOT NULL DEFAULT 20,
     start_time DATETIME NOT NULL,
     end_time DATETIME NOT NULL,
+    duration INT NOT NULL DEFAULT 120 COMMENT 'Duration in minutes',
     duration_minutes INT NOT NULL DEFAULT 120,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_contests_creator FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_contests_start (start_time),
     INDEX idx_contests_slug (slug),
@@ -189,6 +179,36 @@ CREATE TABLE contest_participants (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
+-- Table: submissions
+-- Purpose: Historical record of user submissions and automated judge verdicts
+-- ---------------------------------------------------------------------
+CREATE TABLE submissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    problem_id BIGINT NOT NULL,
+    contest_id BIGINT DEFAULT NULL,
+    language VARCHAR(30) NOT NULL DEFAULT 'JAVA',
+    code MEDIUMTEXT NOT NULL,
+    source_code MEDIUMTEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING, RUNNING, ACCEPTED, WRONG_ANSWER, COMPILATION_ERROR, RUNTIME_ERROR, TIME_LIMIT_EXCEEDED, MEMORY_LIMIT_EXCEEDED',
+    runtime INT DEFAULT NULL COMMENT 'Execution time in milliseconds',
+    memory INT DEFAULT NULL COMMENT 'Peak memory usage in kilobytes',
+    tests_passed INT NOT NULL DEFAULT 0,
+    total_tests INT NOT NULL DEFAULT 0,
+    error_message TEXT DEFAULT NULL COMMENT 'Compiler stderr or runtime exception stack trace',
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_sub_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sub_problem FOREIGN KEY (problem_id) REFERENCES problems(id) ON DELETE CASCADE,
+    CONSTRAINT fk_sub_contest FOREIGN KEY (contest_id) REFERENCES contests(id) ON DELETE SET NULL,
+    INDEX idx_sub_user (user_id),
+    INDEX idx_sub_problem (problem_id),
+    INDEX idx_sub_contest (contest_id),
+    INDEX idx_sub_status (status),
+    INDEX idx_sub_created_at (created_at DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
 -- Table: contest_problem_results
 -- Purpose: Per-problem solve time tracking, attempts, score, and penalty per participant
 -- ---------------------------------------------------------------------
@@ -214,3 +234,6 @@ CREATE TABLE contest_problem_results (
     INDEX idx_cpr_contest_user (contest_id, user_id),
     INDEX idx_cpr_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Re-enable foreign key constraints
+SET FOREIGN_KEY_CHECKS = 1;

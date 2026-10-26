@@ -31,7 +31,7 @@ try {
 Write-Host "`n[+] Configuration:" -ForegroundColor Yellow
 Write-Host "    Backend API:  http://localhost:8080" -ForegroundColor Cyan
 Write-Host "    Frontend UI:  http://localhost:5173" -ForegroundColor Cyan
-Write-Host "    H2 Console:   http://localhost:8080/h2-console" -ForegroundColor Cyan
+Write-Host "    Database:     MySQL 8.0 (codeforge_db)" -ForegroundColor Cyan
 Write-Host "    Credentials:" -ForegroundColor Cyan
 Write-Host "      Admin:      admin     / admin123" -ForegroundColor White
 Write-Host "      Organizer:  organizer / organizer123" -ForegroundColor White

@@ -1,6 +1,12 @@
 package com.codeforge.auth.dto;
 
+import com.codeforge.problem.dto.ProblemListDto;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class UserProfileDto {
 
@@ -14,36 +20,18 @@ public class UserProfileDto {
     private int streak = 0;
     private long solvedCount;
     private long totalSubmissions;
+    private long acceptedSubmissions;
+    private double acceptanceRate;
     private long easySolved;
     private long mediumSolved;
     private long hardSolved;
     private String organization;
+    private List<TopicStatDto> topicStats = new ArrayList<>();
+    private List<String> weakTopics = new ArrayList<>();
+    private List<ProblemListDto> recommendedProblems = new ArrayList<>();
+    private Map<String, Long> dailyActivity = new LinkedHashMap<>();
 
     public UserProfileDto() {
-    }
-
-    public String getOrganization() {
-        return organization;
-    }
-
-    public void setOrganization(String organization) {
-        this.organization = organization;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public int getStreak() {
-        return streak;
-    }
-
-    public void setStreak(int streak) {
-        this.streak = streak;
     }
 
     public Long getId() {
@@ -94,6 +82,22 @@ public class UserProfileDto {
         this.createdAt = createdAt;
     }
 
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public int getStreak() {
+        return streak;
+    }
+
+    public void setStreak(int streak) {
+        this.streak = streak;
+    }
+
     public long getSolvedCount() {
         return solvedCount;
     }
@@ -108,6 +112,22 @@ public class UserProfileDto {
 
     public void setTotalSubmissions(long totalSubmissions) {
         this.totalSubmissions = totalSubmissions;
+    }
+
+    public long getAcceptedSubmissions() {
+        return acceptedSubmissions;
+    }
+
+    public void setAcceptedSubmissions(long acceptedSubmissions) {
+        this.acceptedSubmissions = acceptedSubmissions;
+    }
+
+    public double getAcceptanceRate() {
+        return acceptanceRate;
+    }
+
+    public void setAcceptanceRate(double acceptanceRate) {
+        this.acceptanceRate = acceptanceRate;
     }
 
     public long getEasySolved() {
@@ -132,5 +152,45 @@ public class UserProfileDto {
 
     public void setHardSolved(long hardSolved) {
         this.hardSolved = hardSolved;
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(String organization) {
+        this.organization = organization;
+    }
+
+    public List<TopicStatDto> getTopicStats() {
+        return topicStats;
+    }
+
+    public void setTopicStats(List<TopicStatDto> topicStats) {
+        this.topicStats = topicStats;
+    }
+
+    public List<String> getWeakTopics() {
+        return weakTopics;
+    }
+
+    public void setWeakTopics(List<String> weakTopics) {
+        this.weakTopics = weakTopics;
+    }
+
+    public List<ProblemListDto> getRecommendedProblems() {
+        return recommendedProblems;
+    }
+
+    public void setRecommendedProblems(List<ProblemListDto> recommendedProblems) {
+        this.recommendedProblems = recommendedProblems;
+    }
+
+    public Map<String, Long> getDailyActivity() {
+        return dailyActivity;
+    }
+
+    public void setDailyActivity(Map<String, Long> dailyActivity) {
+        this.dailyActivity = dailyActivity;
     }
 }

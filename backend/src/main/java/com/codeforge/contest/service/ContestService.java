@@ -321,8 +321,22 @@ public class ContestService {
      */
     @Transactional(readOnly = true)
     public ContestAnalyticsDto getContestAnalytics(Long contestId) {
+        return getContestAnalytics(contestId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ContestAnalyticsDto getContestAnalytics(Long contestId, String username) {
         Contest contest = contestRepository.findById(contestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contest", "id", contestId));
+
+        if (username != null) {
+            User current = userRepository.findByUsername(username).orElse(null);
+            if (current != null && current.getRole() != Role.ROLE_ADMIN) {
+                if (contest.getCreatedBy() != null && !contest.getCreatedBy().getId().equals(current.getId())) {
+                    throw new AccessDeniedException("You do not have permission to view analytics for this contest");
+                }
+            }
+        }
 
         List<ContestProblem> cpList = contestProblemRepository.findByContestIdOrderByOrderIndexAsc(contestId);
         List<ContestProblemResult> allResults = contestProblemResultRepository.findByContestId(contestId);

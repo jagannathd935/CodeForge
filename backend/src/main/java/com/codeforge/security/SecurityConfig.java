@@ -56,9 +56,9 @@ public class SecurityConfig {
                     response.getWriter().write("{\"success\":false,\"message\":\"Access Denied: Forbidden resource\"}");
                 })
             )
-            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/api/health", "/error").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/submissions/run").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/problems/**", "/api/topics/**", "/api/contests/**", "/api/users/leaderboard").permitAll()
                 .requestMatchers("/api/problems/**", "/api/test-cases/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ORGANIZER")
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
